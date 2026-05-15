@@ -1,0 +1,38 @@
+/vendor/
+/node_modules/
+/coverage/
+/storage/logs/*
+/storage/cache/*
+/storage/sessions/*
+/storage/uploads/*
+!/storage/logs/.gitkeep
+!/storage/cache/.gitkeep
+!/storage/sessions/.gitkeep
+!/storage/uploads/.gitkeep
+
+.env
+.env.*.local
+.phpunit.result.cache
+.phpunit.cache/
+.php-cs-fixer.cache
+.phpstan.cache
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+docker-compose.override.yml
+
+# Build artifacts
+/public/assets/build/
+/public/hot
+/public/mix-manifest.json

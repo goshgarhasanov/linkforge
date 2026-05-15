@@ -1,0 +1,66 @@
+{
+    "name": "linkforge/linkforge",
+    "description": "Professional URL shortener and analytics platform built with PHP 8.3",
+    "type": "project",
+    "license": "MIT",
+    "keywords": ["url-shortener", "analytics", "php", "slim", "rest-api"],
+    "require": {
+        "php": "^8.3",
+        "ext-pdo": "*",
+        "ext-redis": "*",
+        "ext-mbstring": "*",
+        "ext-json": "*",
+        "slim/slim": "^4.14",
+        "slim/psr7": "^1.6",
+        "php-di/php-di": "^7.0",
+        "illuminate/database": "^11.0",
+        "vlucas/phpdotenv": "^5.6",
+        "monolog/monolog": "^3.7",
+        "twig/twig": "^3.10",
+        "slim/twig-view": "^3.4",
+        "firebase/php-jwt": "^6.10",
+        "predis/predis": "^2.2",
+        "ramsey/uuid": "^4.7",
+        "respect/validation": "^2.3",
+        "endroid/qr-code": "^5.0",
+        "geoip2/geoip2": "^3.0",
+        "donatj/phpuseragentparser": "^1.10",
+        "symfony/mailer": "^7.1",
+        "league/oauth2-client": "^2.7",
+        "robthree/twofactorauth": "^2.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.3",
+        "phpstan/phpstan": "^1.12",
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "fakerphp/faker": "^1.23",
+        "mockery/mockery": "^1.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "serve": "php -S localhost:8080 -t public",
+        "test": "phpunit --colors=always",
+        "test:coverage": "phpunit --coverage-html coverage",
+        "analyse": "phpstan analyse --memory-limit=512M",
+        "format": "php-cs-fixer fix --diff",
+        "format:check": "php-cs-fixer fix --dry-run --diff",
+        "migrate": "php database/migrate.php",
+        "seed": "php database/seed.php"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "preferred-install": "dist"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

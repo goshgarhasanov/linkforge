@@ -1,0 +1,14 @@
+parameters:
+    level: 8
+    paths:
+        - app
+        - config
+        - routes
+    excludePaths:
+        - vendor
+        - storage
+    ignoreErrors:
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+        - '#PHPDoc tag @var#'
+    treatPhpDocTypesAsCertain: false
+    checkMissingIterableValueType: false
