@@ -1,0 +1,127 @@
+{% extends 'layouts/admin.twig' %}
+
+{% set active_page = 'overview' %}
+
+{% block title %}Admin icmal — LinkForge{% endblock %}
+{% block heading %}Sistem icmalı{% endblock %}
+
+{% block content %}
+<div x-data="adminOverview()" x-init="load()">
+    <div x-show="loading" class="text-center py-20"><div class="inline-block w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div></div>
+
+    <div x-show="!loading" x-cloak>
+        {# Stat groups #}
+        <div class="grid lg:grid-cols-3 gap-6 mb-6">
+            <template x-for="group in groups" :key="group.title">
+                <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4" x-text="group.title"></h3>
+                    <div class="space-y-3">
+                        <template x-for="row in group.rows" :key="row.label">
+                            <div class="flex justify-between items-baseline">
+                                <span class="text-sm text-slate-600 dark:text-slate-400" x-text="row.label"></span>
+                                <span class="text-xl font-bold" x-text="row.value"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        {# Growth chart #}
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold">Platforma artımı (son 30 gün)</h3>
+            </div>
+            <canvas id="growthChart" height="80"></canvas>
+        </div>
+
+        {# Top users #}
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <h3 class="font-semibold mb-4">Ən aktiv istifadəçilər</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-xs uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                            <th class="text-left py-2">Ad</th>
+                            <th class="text-left py-2">E-poçt</th>
+                            <th class="text-left py-2">Rol</th>
+                            <th class="text-right py-2">Linklər</th>
+                            <th class="text-right py-2">Kliklər</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="u in topUsers" :key="u.uuid">
+                            <tr class="border-b border-slate-100 dark:border-slate-800/50">
+                                <td class="py-3 font-medium" x-text="u.name"></td>
+                                <td class="py-3 text-slate-500" x-text="u.email"></td>
+                                <td class="py-3"><span class="text-xs px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300" x-text="u.role"></span></td>
+                                <td class="py-3 text-right font-semibold" x-text="u.link_count.toLocaleString()"></td>
+                                <td class="py-3 text-right font-semibold" x-text="u.total_clicks.toLocaleString()"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+function adminOverview() {
+    return {
+        loading: true,
+        groups: [],
+        topUsers: [],
+        chart: null,
+        async load() {
+            const res = await window.lfFetch('/api/v1/admin/overview');
+            const json = await res.json();
+            if (!json.success) return;
+
+            const o = json.data.overview;
+            this.groups = [
+                { title: 'İstifadəçilər', rows: [
+                    { label: 'Toplam',         value: o.users.total.toLocaleString() },
+                    { label: 'Aktiv',          value: o.users.active.toLocaleString() },
+                    { label: 'Təsdiqlənmiş',   value: o.users.verified.toLocaleString() },
+                    { label: 'Son 30 gündə yeni', value: o.users.new_last_30d.toLocaleString() },
+                ]},
+                { title: 'Linklər', rows: [
+                    { label: 'Toplam',         value: o.links.total.toLocaleString() },
+                    { label: 'Aktiv',          value: o.links.active.toLocaleString() },
+                    { label: 'İşarələnmiş',    value: o.links.flagged.toLocaleString() },
+                    { label: 'Vaxtı keçmiş',   value: o.links.expired.toLocaleString() },
+                ]},
+                { title: 'Kliklər', rows: [
+                    { label: 'Toplam',          value: o.clicks.total.toLocaleString() },
+                    { label: 'Unikal',          value: o.clicks.unique_total.toLocaleString() },
+                    { label: 'Son 24 saat',     value: o.clicks.last_24h.toLocaleString() },
+                    { label: 'Bot 30 gündə',    value: o.clicks.bots_blocked_30d.toLocaleString() },
+                ]},
+            ];
+            this.topUsers = json.data.top_users;
+            this.loading = false;
+            this.$nextTick(() => this.renderChart(json.data.growth));
+        },
+        renderChart(growth) {
+            const ctx = document.getElementById('growthChart');
+            if (!ctx) return;
+            this.chart?.destroy();
+            this.chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: growth.map(p => new Date(p.date).toLocaleDateString('az-AZ', { day:'2-digit', month:'short' })),
+                    datasets: [
+                        { label: 'Yeni istifadəçi', data: growth.map(p => p.users),  borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.4, pointRadius: 0 },
+                        { label: 'Yeni link',       data: growth.map(p => p.links),  borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', tension: 0.4, pointRadius: 0 },
+                        { label: 'Kliklər',         data: growth.map(p => p.clicks), borderColor: '#ec4899', backgroundColor: 'rgba(236,72,153,0.1)', tension: 0.4, pointRadius: 0 },
+                    ],
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' } }, x: { grid: { display: false } } } },
+            });
+        },
+    }
+}
+</script>
+{% endblock %}

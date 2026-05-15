@@ -2,11 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Controllers\Admin\AdminApiController;
+use App\Controllers\Admin\AuditLogController;
+use App\Controllers\Admin\LinkAdminController;
+use App\Controllers\Admin\UserAdminController;
 use App\Controllers\Api\AnalyticsController;
 use App\Controllers\Api\AuthController;
 use App\Controllers\Api\LinkController;
 use App\Controllers\Api\QrController;
 use App\Controllers\Api\SettingsController;
+use App\Middleware\AdminMiddleware;
 use App\Middleware\AuthMiddleware;
 use App\Support\Http\JsonResponder;
 use Slim\App;
@@ -41,6 +46,24 @@ return static function (App $app): void {
             $protected->get   ('/settings/tokens',          [SettingsController::class, 'listTokens']);
             $protected->post  ('/settings/tokens',          [SettingsController::class, 'createToken']);
             $protected->delete('/settings/tokens/{id:[0-9]+}', [SettingsController::class, 'revokeToken']);
+
+            $protected->group('/admin', function (RouteCollectorProxy $admin): void {
+                $admin->get   ('/overview',                       [AdminApiController::class,  'overview']);
+                $admin->get   ('/health',                         [AdminApiController::class,  'health']);
+
+                $admin->get   ('/users',                          [UserAdminController::class, 'index']);
+                $admin->get   ('/users/{uuid}',                   [UserAdminController::class, 'show']);
+                $admin->patch ('/users/{uuid}/role',              [UserAdminController::class, 'updateRole']);
+                $admin->patch ('/users/{uuid}/toggle-active',     [UserAdminController::class, 'toggleActive']);
+
+                $admin->get   ('/links',                          [LinkAdminController::class, 'index']);
+                $admin->patch ('/links/{uuid}/flag',              [LinkAdminController::class, 'flag']);
+                $admin->patch ('/links/{uuid}/unflag',            [LinkAdminController::class, 'unflag']);
+                $admin->patch ('/links/{uuid}/toggle-active',     [LinkAdminController::class, 'toggleActive']);
+                $admin->delete('/links/{uuid}',                   [LinkAdminController::class, 'destroy']);
+
+                $admin->get   ('/audit',                          [AuditLogController::class,  'index']);
+            })->add(AdminMiddleware::class);
         })->add(AuthMiddleware::class);
     });
 };

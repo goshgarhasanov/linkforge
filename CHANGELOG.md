@@ -7,6 +7,23 @@ Bu layihə [Semantic Versioning](https://semver.org/spec/v2.0.0.html) istifadə 
 
 ## [Unreleased]
 
+### Phase 3 — Admin Panel, Moderation & Audit (2026-05-15)
+
+#### Added
+- `audit_logs` cədvəli + `AuditAction` enum (13 əməliyyat növü) + `AuditLogger` service
+- `AdminMiddleware` — `UserRole::canAccessAdmin()` ilə icazə yoxlanması
+- `WebAuthMiddleware` — cookie/header bearer parse (gələcək web auth üçün)
+- `/admin` — sistem icmalı: 3 stat group (users/links/clicks), 30-day growth chart, top 10 user cədvəli
+- `/admin/users` — istifadəçi siyahısı: search, role filter, status filter, role dəyişdirmə (inline select), ban/unban
+- `/admin/links` — link moderasiyası: flag/unflag (səbəb ilə), deaktivasiya, sistem-level silmə
+- `/admin/audit` — audit log: action filter, pagination, metadata göstərmək
+- `/admin/health` — DB/Redis/disk/PHP health check, latency göstərici, 15s avtomatik yenilənmə, real-time monitoring
+- `AdminStatsService` — overview aggregations, growth timeseries, system health probes
+- `AdminApiController`, `UserAdminController`, `LinkAdminController`, `AuditLogController`
+- 13 yeni admin API endpoint-i (hamısı admin middleware altında, audit-logged)
+- Self-protection: aktor öz rolunu dəyişdirə bilmir, super admin yalnız super admin tərəfindən
+- `database/seed.php` — idempotent admin user yaratmaq scripti
+
 ### Phase 2 — Dashboard, Analytics & API Docs (2026-05-15)
 
 #### Added

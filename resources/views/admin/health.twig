@@ -1,0 +1,50 @@
+{% extends 'layouts/admin.twig' %}
+
+{% set active_page = 'health' %}
+
+{% block title %}Sistem sağlamlığı — Admin{% endblock %}
+{% block heading %}Sistem sağlamlığı{% endblock %}
+
+{% block content %}
+<div x-data="systemHealth()" x-init="load(); setInterval(load, 15000)">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <template x-for="(card, key) in cards" :key="key">
+            <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold capitalize" x-text="key"></h3>
+                    <span :class="statusClass(card.status)" class="text-xs px-2.5 py-1 rounded-full font-semibold" x-text="card.status?.toUpperCase()"></span>
+                </div>
+                <div class="space-y-1.5 text-sm">
+                    <template x-for="[k, v] in Object.entries(card).filter(([k]) => k !== 'status' && k !== 'error')">
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span class="capitalize" x-text="k.replace(/_/g, ' ')"></span>
+                            <span class="font-mono text-slate-900 dark:text-slate-100" x-text="v"></span>
+                        </div>
+                    </template>
+                    <div x-show="card.error" x-cloak class="mt-2 p-2 rounded bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 text-xs" x-text="card.error"></div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <p class="text-xs text-slate-500 mt-4">Hər 15 saniyədə avtomatik yenilənir.</p>
+</div>
+
+<script>
+function systemHealth() {
+    return {
+        cards: {},
+        async load() {
+            const json = await (await window.lfFetch('/api/v1/admin/health')).json();
+            if (json.success) this.cards = json.data;
+        },
+        statusClass(s) {
+            if (s === 'ok')      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
+            if (s === 'warning') return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
+            if (s === 'down')    return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+            return 'bg-slate-100 dark:bg-slate-800 text-slate-600';
+        },
+    }
+}
+</script>
+{% endblock %}

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Controllers\Admin\AdminPageController;
 use App\Controllers\Web\AuthPageController;
 use App\Controllers\Web\DashboardController;
 use App\Controllers\Web\LandingController;
@@ -24,6 +25,14 @@ return static function (App $app): void {
         $group->get('/links',          [DashboardController::class, 'links']);
         $group->get('/links/{code}',   [DashboardController::class, 'linkDetail']);
         $group->get('/settings',       [DashboardController::class, 'settings']);
+    });
+
+    $app->group('/admin', function (RouteCollectorProxy $group): void {
+        $group->get('',         [AdminPageController::class, 'overview']);
+        $group->get('/users',   [AdminPageController::class, 'users']);
+        $group->get('/links',   [AdminPageController::class, 'links']);
+        $group->get('/audit',   [AdminPageController::class, 'audit']);
+        $group->get('/health',  [AdminPageController::class, 'health']);
     });
 
     $app->get('/docs', static function ($request, $response) use ($twig) {

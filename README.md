@@ -225,7 +225,7 @@ docker compose exec php composer format
 
 - [x] **Phase 1** — Foundation, auth, link CRUD, redirect, analytics tracking
 - [x] **Phase 2** — Dashboard UI, charts, link management, QR codes, OpenAPI/Swagger
-- [ ] **Phase 3** — Admin paneli, user management, moderation
+- [x] **Phase 3** — Admin panel, user management, link moderation, audit log, system health
 - [ ] **Phase 4** — Toplu idxal, QR kod, deep linking
 - [ ] **Phase 5** — OAuth2 (Google, GitHub), 2FA
 - [ ] **Phase 6** — Premium planlar, billing integration

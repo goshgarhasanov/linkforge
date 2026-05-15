@@ -1,0 +1,84 @@
+{% extends 'layouts/admin.twig' %}
+
+{% set active_page = 'audit' %}
+
+{% block title %}Audit log — Admin{% endblock %}
+{% block heading %}Audit log{% endblock %}
+
+{% block content %}
+<div x-data="auditLog()" x-init="load()">
+    <div class="flex gap-3 mb-6">
+        <select x-model="filters.action" @change="load(1)" class="px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+            <option value="">Bütün əməliyyatlar</option>
+            <option value="user.role_changed">Rol dəyişikliyi</option>
+            <option value="user.banned">İstifadəçi bloku</option>
+            <option value="user.unbanned">Bloku açma</option>
+            <option value="link.flagged">Link işarələmə</option>
+            <option value="link.unflagged">İşarəni götürmə</option>
+            <option value="link.deactivated">Link deaktiv</option>
+            <option value="link.deleted">Link silmə</option>
+        </select>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-950/50 text-left text-xs uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="px-6 py-3">Vaxt</th>
+                        <th class="px-6 py-3">Aktor</th>
+                        <th class="px-6 py-3">Əməliyyat</th>
+                        <th class="px-6 py-3">Hədəf</th>
+                        <th class="px-6 py-3">Detallar</th>
+                        <th class="px-6 py-3">IP</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                    <template x-for="log in logs" :key="log.id">
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-950/50">
+                            <td class="px-6 py-4 text-xs text-slate-500" x-text="formatDate(log.created_at)"></td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm" x-text="log.actor ? log.actor.name : 'Sistem'"></div>
+                                <div class="text-xs text-slate-500" x-text="log.actor ? log.actor.email : ''"></div>
+                            </td>
+                            <td class="px-6 py-4"><span class="text-xs px-2.5 py-1 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-semibold" x-text="log.action_label"></span></td>
+                            <td class="px-6 py-4 font-mono text-xs" x-text="log.target_type ? log.target_type + '#' + log.target_id : '—'"></td>
+                            <td class="px-6 py-4 text-xs text-slate-600 dark:text-slate-400" x-text="log.metadata ? JSON.stringify(log.metadata) : '—'"></td>
+                            <td class="px-6 py-4 font-mono text-xs text-slate-500" x-text="log.ip_address || '—'"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <div x-show="meta.total_pages > 1" class="flex justify-between px-6 py-3 border-t border-slate-200 dark:border-slate-800">
+            <span class="text-sm text-slate-500">Səhifə <span x-text="meta.page"></span> / <span x-text="meta.total_pages"></span></span>
+            <div class="flex gap-2">
+                <button @click="load(meta.page - 1)" :disabled="meta.page <= 1" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50">Əvvəlki</button>
+                <button @click="load(meta.page + 1)" :disabled="meta.page >= meta.total_pages" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50">Növbəti</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function auditLog() {
+    return {
+        logs: [],
+        meta: { page: 1, total: 0, total_pages: 1 },
+        filters: { action: '' },
+        async load(page = 1) {
+            const url = new URL('/api/v1/admin/audit', window.location.origin);
+            url.searchParams.set('page', page);
+            if (this.filters.action) url.searchParams.set('action', this.filters.action);
+
+            const json = await (await window.lfFetch(url)).json();
+            if (json.success) { this.logs = json.data; this.meta = json.meta; }
+        },
+        formatDate(iso) {
+            return new Date(iso).toLocaleString('az-AZ', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        },
+    }
+}
+</script>
+{% endblock %}

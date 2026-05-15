@@ -1,0 +1,78 @@
+{% extends 'layouts/base.twig' %}
+
+{% block body %}
+<div x-data="{ sidebarOpen: false }" class="min-h-screen bg-slate-100 dark:bg-slate-950">
+    <aside
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+        class="fixed inset-y-0 left-0 z-30 w-64 bg-slate-900 text-slate-200 border-r border-slate-800 transform transition-transform">
+        <div class="flex items-center gap-2 h-16 px-6 border-b border-slate-800">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/30">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="text-sm font-bold">LinkForge</div>
+                <div class="text-xs text-amber-400 font-semibold">ADMIN</div>
+            </div>
+        </div>
+
+        <nav class="p-4 space-y-1">
+            {% set active = active_page ?? 'overview' %}
+            {% set items = [
+                { key: 'overview', href: '/admin',              label: 'İcmal' },
+                { key: 'users',    href: '/admin/users',        label: 'İstifadəçilər' },
+                { key: 'links',    href: '/admin/links',        label: 'Linklər' },
+                { key: 'audit',    href: '/admin/audit',        label: 'Audit log' },
+                { key: 'health',   href: '/admin/health',       label: 'Sistem sağlamlığı' },
+            ] %}
+            {% for item in items %}
+            <a href="{{ item.href }}"
+               class="block px-3 py-2.5 rounded-lg text-sm font-medium {{ active == item.key ? 'bg-red-500/10 text-red-300' : 'text-slate-300 hover:bg-slate-800' }} transition">
+                {{ item.label }}
+            </a>
+            {% endfor %}
+
+            <div class="pt-6 mt-6 border-t border-slate-800">
+                <a href="/dashboard" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 transition">
+                    ← İstifadəçi dashboard-u
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <div x-show="sidebarOpen" @click="sidebarOpen = false" x-cloak class="fixed inset-0 bg-black/50 z-20 lg:hidden"></div>
+
+    <div class="lg:pl-64">
+        <header class="sticky top-0 z-10 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 sm:px-6 lg:px-8">
+            <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <h1 class="text-lg font-semibold ml-3 lg:ml-0">{% block heading %}{% endblock %}</h1>
+
+            <div class="ml-auto flex items-center gap-3">
+                <span class="text-xs px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold">Admin rejimi</span>
+                <button onclick="localStorage.removeItem('lf_token'); window.location.href='/'" class="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-red-600">Çıxış</button>
+            </div>
+        </header>
+
+        <main class="p-4 sm:p-6 lg:p-8">{% block content %}{% endblock %}</main>
+    </div>
+</div>
+
+<script>
+(function bootstrapAdminAuth() {
+    const token = localStorage.getItem('lf_token');
+    if (!token) { window.location.href = '/login'; return; }
+
+    window.lfFetch = async function(url, options = {}) {
+        const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers ?? {});
+        headers['Authorization'] = 'Bearer ' + token;
+        const res = await fetch(url, { ...options, headers });
+        if (res.status === 401) { localStorage.removeItem('lf_token'); window.location.href = '/login'; return null; }
+        if (res.status === 403) { window.location.href = '/dashboard'; return null; }
+        return res;
+    };
+})();
+</script>
+{% endblock %}

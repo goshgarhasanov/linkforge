@@ -1,0 +1,123 @@
+{% extends 'layouts/admin.twig' %}
+
+{% set active_page = 'links' %}
+
+{% block title %}Linklər — Admin{% endblock %}
+{% block heading %}Link moderasiyası{% endblock %}
+
+{% block content %}
+<div x-data="linksAdmin()" x-init="load()">
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+        <input
+            x-model="filters.search"
+            @input.debounce.300ms="load(1)"
+            type="text"
+            placeholder="Kod, URL və ya başlıq ilə axtar..."
+            class="flex-1 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+
+        <select x-model="filters.status" @change="load(1)" class="px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+            <option value="">Bütün linklər</option>
+            <option value="active">Aktiv</option>
+            <option value="flagged">İşarələnmiş</option>
+            <option value="inactive">Deaktiv</option>
+        </select>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-950/50 text-left text-xs uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="px-6 py-3">Qısa kod</th>
+                        <th class="px-6 py-3">Hədəf</th>
+                        <th class="px-6 py-3">Sahib</th>
+                        <th class="px-6 py-3 text-right">Kliklər</th>
+                        <th class="px-6 py-3">Status</th>
+                        <th class="px-6 py-3 text-right">Əməliyyatlar</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                    <template x-for="l in links" :key="l.uuid">
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-950/50">
+                            <td class="px-6 py-4 font-mono text-brand-600 dark:text-brand-400" x-text="l.short_code"></td>
+                            <td class="px-6 py-4">
+                                <div class="max-w-xs truncate text-slate-600 dark:text-slate-400" :title="l.original_url" x-text="l.original_url"></div>
+                                <div x-show="l.title" class="text-xs text-slate-500" x-text="l.title"></div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm" x-text="l.user ? l.user.name : '—'"></div>
+                                <div class="text-xs text-slate-500" x-text="l.user ? l.user.email : ''"></div>
+                            </td>
+                            <td class="px-6 py-4 text-right font-semibold" x-text="l.click_count.toLocaleString()"></td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-col gap-1">
+                                    <span x-show="l.is_flagged" class="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-semibold">⚠ İşarələnmiş</span>
+                                    <span x-show="!l.is_active" class="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold">Deaktiv</span>
+                                    <span x-show="l.is_active && !l.is_flagged" class="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-semibold">Aktiv</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex justify-end gap-2">
+                                    <button x-show="!l.is_flagged" @click="flag(l)" class="text-sm text-amber-600 hover:text-amber-700 font-medium">İşarələ</button>
+                                    <button x-show="l.is_flagged"  @click="unflag(l)" class="text-sm text-green-600 hover:text-green-700 font-medium">Aç</button>
+                                    <button @click="toggleActive(l)" class="text-sm font-medium" :class="l.is_active ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'">
+                                        <span x-text="l.is_active ? 'Deaktiv et' : 'Aktivləşdir'"></span>
+                                    </button>
+                                    <button @click="remove(l)" class="text-sm text-red-600 hover:text-red-700 font-medium">Sil</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <div x-show="meta.total_pages > 1" class="flex justify-between px-6 py-3 border-t border-slate-200 dark:border-slate-800">
+            <span class="text-sm text-slate-500">Səhifə <span x-text="meta.page"></span> / <span x-text="meta.total_pages"></span> (cəmi <span x-text="meta.total"></span>)</span>
+            <div class="flex gap-2">
+                <button @click="load(meta.page - 1)" :disabled="meta.page <= 1" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50">Əvvəlki</button>
+                <button @click="load(meta.page + 1)" :disabled="meta.page >= meta.total_pages" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50">Növbəti</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function linksAdmin() {
+    return {
+        links: [],
+        meta: { page: 1, total: 0, total_pages: 1 },
+        filters: { search: '', status: '' },
+        async load(page = 1) {
+            const url = new URL('/api/v1/admin/links', window.location.origin);
+            url.searchParams.set('page', page);
+            if (this.filters.search) url.searchParams.set('search', this.filters.search);
+            if (this.filters.status) url.searchParams.set('status', this.filters.status);
+
+            const json = await (await window.lfFetch(url)).json();
+            if (json.success) { this.links = json.data; this.meta = json.meta; }
+        },
+        async flag(l) {
+            const reason = prompt('İşarələmə səbəbi (opsional):', 'Şübhəli məzmun');
+            if (reason === null) return;
+            const res = await window.lfFetch('/api/v1/admin/links/' + l.uuid + '/flag', { method: 'PATCH', body: JSON.stringify({ reason }) });
+            const json = await res.json();
+            if (json.success) { l.is_flagged = true; l.flag_reason = reason; }
+        },
+        async unflag(l) {
+            await window.lfFetch('/api/v1/admin/links/' + l.uuid + '/unflag', { method: 'PATCH' });
+            l.is_flagged = false; l.flag_reason = null;
+        },
+        async toggleActive(l) {
+            await window.lfFetch('/api/v1/admin/links/' + l.uuid + '/toggle-active', { method: 'PATCH' });
+            l.is_active = !l.is_active;
+        },
+        async remove(l) {
+            if (!confirm('Bu linki sistem səviyyəsində silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.')) return;
+            await window.lfFetch('/api/v1/admin/links/' + l.uuid, { method: 'DELETE' });
+            this.links = this.links.filter(x => x.uuid !== l.uuid);
+        },
+    }
+}
+</script>
+{% endblock %}

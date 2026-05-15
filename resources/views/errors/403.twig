@@ -1,0 +1,16 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}403 — İcazə yoxdur{% endblock %}
+
+{% block body %}
+<div class="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-slate-50 to-amber-50 dark:from-slate-950 dark:to-amber-950/30">
+    <div class="text-center max-w-md">
+        <div class="text-9xl font-extrabold text-amber-500 mb-4">403</div>
+        <h1 class="text-3xl font-bold mb-3">İcazəniz yoxdur</h1>
+        <p class="text-slate-600 dark:text-slate-400 mb-8">{{ message ?? 'Bu səhifəyə daxil olmaq üçün lazımi səlahiyyətə malik deyilsiniz.' }}</p>
+        <a href="/dashboard" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold shadow-lg shadow-brand-500/30 hover:shadow-xl transition">
+            Dashboard-a qayıt
+        </a>
+    </div>
+</div>
+{% endblock %}
