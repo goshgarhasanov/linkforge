@@ -17,6 +17,8 @@ use App\Services\ShortCodeGenerator;
 use App\Services\TokenService;
 use App\Services\TwoFactorService;
 use App\Services\WebhookDispatcher;
+use App\Support\Translator;
+use App\Support\TwigExtension;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
 use Predis\Client as RedisClient;
@@ -56,15 +58,28 @@ return [
         ]);
     },
 
+    Translator::class => static function (ContainerInterface $c): Translator {
+        $config = $c->get('config')['app'];
+
+        return new Translator(
+            langPath: $config['paths']['resources'] . '/lang',
+            locale: $config['locale'] ?? 'az',
+        );
+    },
+
     Twig::class => static function (ContainerInterface $c): Twig {
         $config = $c->get('config')['app'];
         $loader = new FilesystemLoader($config['paths']['resources'] . '/views');
 
-        return new Twig($loader, [
+        $twig = new Twig($loader, [
             'cache' => $config['env'] === 'production' ? $config['paths']['cache'] . '/views' : false,
             'debug' => $config['debug'],
             'auto_reload' => true,
         ]);
+
+        $twig->getEnvironment()->addExtension(new TwigExtension($c->get(Translator::class)));
+
+        return $twig;
     },
 
     ShortCodeGenerator::class => static function (ContainerInterface $c): ShortCodeGenerator {

@@ -7,8 +7,10 @@ use App\Controllers\Web\AuthPageController;
 use App\Controllers\Web\DashboardController;
 use App\Controllers\Web\EmailVerificationController;
 use App\Controllers\Web\LandingController;
+use App\Controllers\Web\LocaleController;
 use App\Controllers\Web\OAuthController;
 use App\Controllers\Web\RedirectController;
+use App\Middleware\LocaleMiddleware;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 use Slim\Views\TwigMiddleware;
@@ -17,10 +19,13 @@ return static function (App $app): void {
     $container = $app->getContainer();
     $twig = $container->get(\Slim\Views\Twig::class);
     $app->add(TwigMiddleware::create($app, $twig));
+    $app->add($container->get(LocaleMiddleware::class));
 
     $app->get('/',         [LandingController::class,  'index'])->setName('landing');
     $app->get('/login',    [AuthPageController::class, 'login']);
     $app->get('/register', [AuthPageController::class, 'register']);
+
+    $app->get('/locale/{locale:az|en}', [LocaleController::class, 'set']);
 
     $app->get('/auth/oauth/{provider:google|github}',           [OAuthController::class, 'redirect']);
     $app->get('/auth/oauth/{provider:google|github}/callback',  [OAuthController::class, 'callback']);

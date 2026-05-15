@@ -1,16 +1,16 @@
 {% extends 'layouts/base.twig' %}
 
-{% block title %}404 — Səhifə tapılmadı{% endblock %}
+{% block title %}404 — {{ t('errors.404_title') }}{% endblock %}
 
 {% block body %}
 <div class="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-slate-50 to-brand-50 dark:from-slate-950 dark:to-purple-950/30">
     <div class="text-center max-w-md">
         <div class="text-9xl font-extrabold gradient-text mb-4">404</div>
-        <h1 class="text-3xl font-bold mb-3">Bu səhifə yoxa çıxıb</h1>
-        <p class="text-slate-600 dark:text-slate-400 mb-8">{{ message ?? 'Axtardığınız resurs mövcud deyil və ya silinib.' }}</p>
+        <h1 class="text-3xl font-bold mb-3">{{ t('errors.404_title') }}</h1>
+        <p class="text-slate-600 dark:text-slate-400 mb-8">{{ message ?? t('errors.404_message') }}</p>
         <a href="/" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold shadow-lg shadow-brand-500/30 hover:shadow-xl transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
-            Ana səhifəyə qayıt
+            {{ t('errors.back_home') }}
         </a>
     </div>
 </div>
