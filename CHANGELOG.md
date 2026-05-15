@@ -7,6 +7,52 @@ Bu layihə [Semantic Versioning](https://semver.org/spec/v2.0.0.html) istifadə 
 
 ## [Unreleased]
 
+### Phase 7 — Real-time Updates & Notifications (2026-05-15)
+
+#### Added
+- `notifications` migration + `Notification` model (uuid, type, title, body, action_url, metadata, read_at)
+- `NotificationService` — DB persistence + Redis Pub/Sub publish
+- Server-Sent Events endpoint: `GET /api/v1/stream` — Redis pubsub `lf:user:{id}` channel
+- 60s connection lifetime, 15s heartbeat ping, graceful shutdown on `connection_aborted`
+- `NotificationController` — list, mark single read, mark all read
+
+### Phase 6 — Subscription Plans & Stripe Billing (2026-05-15)
+
+#### Added
+- `subscriptions` + `billing_events` migrations
+- `SubscriptionPlan` enum (Free/Pro/Enterprise) with prices, limits, features
+- `Subscription` model with status (trialing/active/past_due/canceled/incomplete)
+- `BillingService` — Stripe Checkout session creation, signed webhook handling (HMAC-SHA256)
+- Idempotent webhook processing (stripe_event_id unique constraint)
+- Event handlers: `checkout.session.completed`, `customer.subscription.{created,updated,deleted}`
+- `BillingController` — current plan, plans catalog, checkout init, webhook receiver
+- LinkService quota now respects active subscription plan limits
+
+### Phase 5 — Bulk CSV Import, Webhooks & Rate Limiting (2026-05-15)
+
+#### Added
+- `webhooks` + `webhook_deliveries` migrations
+- `Webhook` model with event filtering (`listensTo()`), `WebhookDelivery` for delivery log
+- `WebhookDispatcher` — HMAC-SHA256 signed deliveries (`X-LinkForge-Signature`), 5s timeout, auto-disable after 10 consecutive failures
+- `WebhookController` — list, create (HTTPS-only), delete
+- `BulkLinkImporter` — CSV parse (header detection), max 1000 rows, per-row error reporting
+- `POST /api/v1/links/bulk` endpoint (JSON or multipart upload)
+- `RateLimitMiddleware` — Redis-backed token bucket, configurable per-route bucket, `X-RateLimit-*` headers, `Retry-After` on 429
+
+### Phase 4 — OAuth2, 2FA & Email Verification (2026-05-15)
+
+#### Added
+- `oauth_accounts` migration + `OAuthAccount` model
+- `OAuthService` — provider abstraction (Google + GitHub) via `league/oauth2-client`
+- `/auth/oauth/{provider}` redirect + `/auth/oauth/{provider}/callback` handlers
+- State CSRF protection (HttpOnly cookie + state param comparison)
+- Auto-link existing accounts by email; auto-create with verified status
+- `TwoFactorService` — TOTP via `robthree/twofactorauth`, QR code data URI
+- `POST /auth/2fa/begin` → generate secret + QR; `confirm` → enable; `disable` → revoke
+- `email_verifications` migration with hashed tokens, 24h TTL
+- `EmailVerificationService` — Symfony Mailer integration (graceful no-op if not configured)
+- `/verify-email?token=` endpoint with custom success/failure page
+
 ### Phase 3 — Admin Panel, Moderation & Audit (2026-05-15)
 
 #### Added

@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Controllers\Admin\AdminPageController;
 use App\Controllers\Web\AuthPageController;
 use App\Controllers\Web\DashboardController;
+use App\Controllers\Web\EmailVerificationController;
 use App\Controllers\Web\LandingController;
+use App\Controllers\Web\OAuthController;
 use App\Controllers\Web\RedirectController;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
@@ -19,6 +21,11 @@ return static function (App $app): void {
     $app->get('/',         [LandingController::class,  'index'])->setName('landing');
     $app->get('/login',    [AuthPageController::class, 'login']);
     $app->get('/register', [AuthPageController::class, 'register']);
+
+    $app->get('/auth/oauth/{provider:google|github}',           [OAuthController::class, 'redirect']);
+    $app->get('/auth/oauth/{provider:google|github}/callback',  [OAuthController::class, 'callback']);
+
+    $app->get('/verify-email', [EmailVerificationController::class, 'verify']);
 
     $app->group('/dashboard', function (RouteCollectorProxy $group): void {
         $group->get('',                [DashboardController::class, 'overview']);

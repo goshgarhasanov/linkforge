@@ -8,9 +8,15 @@ use App\Controllers\Admin\LinkAdminController;
 use App\Controllers\Admin\UserAdminController;
 use App\Controllers\Api\AnalyticsController;
 use App\Controllers\Api\AuthController;
+use App\Controllers\Api\BillingController;
+use App\Controllers\Api\BulkImportController;
 use App\Controllers\Api\LinkController;
+use App\Controllers\Api\NotificationController;
 use App\Controllers\Api\QrController;
 use App\Controllers\Api\SettingsController;
+use App\Controllers\Api\StreamController;
+use App\Controllers\Api\TwoFactorController;
+use App\Controllers\Api\WebhookController;
 use App\Middleware\AdminMiddleware;
 use App\Middleware\AuthMiddleware;
 use App\Support\Http\JsonResponder;
@@ -32,11 +38,19 @@ return static function (App $app): void {
         $group->get('/links/{code}/qr.png', [QrController::class, 'png']);
         $group->get('/links/{code}/qr.svg', [QrController::class, 'svg']);
 
+        $group->post('/billing/webhook', [BillingController::class, 'webhook']);
+        $group->get ('/billing/plans',   [BillingController::class, 'plans']);
+
         $group->group('', function (RouteCollectorProxy $protected): void {
             $protected->get('/auth/me', [AuthController::class, 'me']);
 
+            $protected->post  ('/auth/2fa/begin',   [TwoFactorController::class, 'begin']);
+            $protected->post  ('/auth/2fa/confirm', [TwoFactorController::class, 'confirm']);
+            $protected->post  ('/auth/2fa/disable', [TwoFactorController::class, 'disable']);
+
             $protected->post  ('/links',                    [LinkController::class, 'store']);
             $protected->get   ('/links',                    [LinkController::class, 'index']);
+            $protected->post  ('/links/bulk',               [BulkImportController::class, 'import']);
             $protected->get   ('/links/{code}',             [LinkController::class, 'show']);
             $protected->delete('/links/{code}',             [LinkController::class, 'destroy']);
             $protected->get   ('/links/{code}/analytics',   [AnalyticsController::class, 'show']);
@@ -46,6 +60,19 @@ return static function (App $app): void {
             $protected->get   ('/settings/tokens',          [SettingsController::class, 'listTokens']);
             $protected->post  ('/settings/tokens',          [SettingsController::class, 'createToken']);
             $protected->delete('/settings/tokens/{id:[0-9]+}', [SettingsController::class, 'revokeToken']);
+
+            $protected->get   ('/webhooks',                 [WebhookController::class, 'index']);
+            $protected->post  ('/webhooks',                 [WebhookController::class, 'store']);
+            $protected->delete('/webhooks/{id:[0-9]+}',     [WebhookController::class, 'destroy']);
+
+            $protected->get   ('/billing/current',          [BillingController::class, 'current']);
+            $protected->post  ('/billing/checkout',         [BillingController::class, 'checkout']);
+
+            $protected->get   ('/notifications',                       [NotificationController::class, 'index']);
+            $protected->patch ('/notifications/read-all',              [NotificationController::class, 'markAllRead']);
+            $protected->patch ('/notifications/{uuid}/read',           [NotificationController::class, 'markRead']);
+
+            $protected->get   ('/stream',                              [StreamController::class, 'subscribe']);
 
             $protected->group('/admin', function (RouteCollectorProxy $admin): void {
                 $admin->get   ('/overview',                       [AdminApiController::class,  'overview']);

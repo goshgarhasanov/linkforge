@@ -61,6 +61,16 @@ final class User extends Model
         return $this->hasMany(ApiToken::class);
     }
 
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function webhooks(): HasMany
+    {
+        return $this->hasMany(Webhook::class);
+    }
+
     public function verifyPassword(string $plain): bool
     {
         return password_verify($plain, $this->password_hash);

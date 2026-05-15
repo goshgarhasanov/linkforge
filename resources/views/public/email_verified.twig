@@ -1,0 +1,25 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}E-poçt təsdiqi — LinkForge{% endblock %}
+
+{% block body %}
+<div class="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-slate-50 to-brand-50 dark:from-slate-950 dark:to-purple-950/30">
+    <div class="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 text-center border border-slate-200 dark:border-slate-800">
+        {% if success %}
+            <div class="text-6xl mb-4">✅</div>
+            <h1 class="text-2xl font-bold mb-2">E-poçt təsdiqləndi</h1>
+            <p class="text-slate-600 dark:text-slate-400 mb-6">{{ email }} ünvanı uğurla təsdiqləndi. İndi tam funksionallıqdan istifadə edə bilərsiniz.</p>
+            <a href="/dashboard" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold shadow-lg shadow-brand-500/30">
+                Dashboard-a get
+            </a>
+        {% else %}
+            <div class="text-6xl mb-4">⚠</div>
+            <h1 class="text-2xl font-bold mb-2">Təsdiq alınmadı</h1>
+            <p class="text-slate-600 dark:text-slate-400 mb-6">{{ message }}</p>
+            <a href="/login" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-slate-300 dark:border-slate-700">
+                Giriş səhifəsinə qayıt
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

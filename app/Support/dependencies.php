@@ -2,10 +2,21 @@
 
 declare(strict_types=1);
 
+use App\Services\AnalyticsService;
+use App\Services\ApiTokenService;
+use App\Services\AuditLogger;
 use App\Services\AuthService;
+use App\Services\BillingService;
+use App\Services\BulkLinkImporter;
+use App\Services\ClickTracker;
+use App\Services\EmailVerificationService;
 use App\Services\LinkService;
+use App\Services\NotificationService;
+use App\Services\OAuthService;
 use App\Services\ShortCodeGenerator;
 use App\Services\TokenService;
+use App\Services\TwoFactorService;
+use App\Services\WebhookDispatcher;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
 use Predis\Client as RedisClient;
@@ -78,6 +89,17 @@ return [
         );
     },
 
-    AuthService::class => \DI\autowire(),
-    LinkService::class => \DI\autowire(),
+    AuthService::class              => \DI\autowire(),
+    LinkService::class              => \DI\autowire(),
+    AnalyticsService::class         => \DI\autowire(),
+    ApiTokenService::class          => \DI\autowire(),
+    AuditLogger::class              => \DI\autowire(),
+    BillingService::class           => \DI\autowire(),
+    BulkLinkImporter::class         => \DI\autowire(),
+    ClickTracker::class             => \DI\autowire(),
+    EmailVerificationService::class => \DI\autowire(),
+    NotificationService::class      => \DI\autowire(),
+    OAuthService::class             => \DI\autowire(),
+    TwoFactorService::class         => \DI\autowire(),
+    WebhookDispatcher::class        => \DI\autowire(),
 ];

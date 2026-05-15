@@ -74,7 +74,7 @@ final class LinkService
             return;
         }
 
-        $limit = $user->role->linkLimit();
+        $limit = $this->resolveLimit($user);
         if ($limit === null) {
             return;
         }
@@ -86,6 +86,21 @@ final class LinkService
                 sprintf('Cari planınız üçün maksimum %d link limitinə çatmısınız.', $limit),
             );
         }
+    }
+
+    private function resolveLimit(User $user): ?int
+    {
+        if ($user->role->canAccessAdmin()) {
+            return null;
+        }
+
+        $subscription = $user->subscriptions()->whereIn('status', ['trialing', 'active'])->latest()->first();
+
+        if ($subscription !== null) {
+            return $subscription->plan->linkLimit();
+        }
+
+        return $user->role->linkLimit();
     }
 
     /**
