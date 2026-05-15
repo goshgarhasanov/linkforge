@@ -1,0 +1,185 @@
+{% extends 'layouts/dashboard.twig' %}
+
+{% set active_page = 'settings' %}
+
+{% block title %}Tənzimləmələr — LinkForge{% endblock %}
+{% block heading %}Tənzimləmələr{% endblock %}
+
+{% block content %}
+<div x-data="settings()" x-init="load()" class="max-w-3xl">
+    <div class="space-y-6">
+
+        {# Profile #}
+        <section class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <h3 class="text-lg font-semibold mb-1">Profil</h3>
+            <p class="text-sm text-slate-500 mb-5">Ümumi profil məlumatlarınız.</p>
+            <form @submit.prevent="saveProfile" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Ad və soyad</label>
+                    <input x-model="profile.name" type="text" required class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">E-poçt</label>
+                    <input x-model="profile.email" type="email" disabled class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 text-slate-500">
+                    <p class="text-xs text-slate-500 mt-1.5">E-poçt dəyişdirilə bilməz.</p>
+                </div>
+                <button type="submit" :disabled="savingProfile" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold shadow-lg shadow-brand-500/30 disabled:opacity-50">
+                    <span x-show="!savingProfile">Yadda saxla</span>
+                    <span x-show="savingProfile">Saxlanılır...</span>
+                </button>
+            </form>
+        </section>
+
+        {# Password #}
+        <section class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <h3 class="text-lg font-semibold mb-1">Şifrə</h3>
+            <p class="text-sm text-slate-500 mb-5">Hesabınızın təhlükəsizliyini qoruyun.</p>
+            <form @submit.prevent="changePassword" class="space-y-4">
+                <input x-model="pwd.current" type="password" required placeholder="Cari şifrə" class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                <input x-model="pwd.new"     type="password" required placeholder="Yeni şifrə (ən azı 8 simvol)" class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                <button type="submit" :disabled="savingPwd" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold shadow-lg shadow-brand-500/30 disabled:opacity-50">
+                    Şifrəni dəyiş
+                </button>
+            </form>
+        </section>
+
+        {# API tokens #}
+        <section class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-start mb-5">
+                <div>
+                    <h3 class="text-lg font-semibold mb-1">API tokenlər</h3>
+                    <p class="text-sm text-slate-500">REST API-ə proqramlı giriş üçün şəxsi tokenlər.</p>
+                </div>
+                <button @click="showTokenModal = true; newToken = { name: '', abilities: ['read'] }" class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white text-sm font-semibold">
+                    + Yeni token
+                </button>
+            </div>
+
+            <div class="space-y-2">
+                <template x-for="t in tokens" :key="t.id">
+                    <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                        <div>
+                            <div class="font-medium" x-text="t.name"></div>
+                            <div class="text-xs text-slate-500 font-mono" x-text="t.prefix + '••••••••'"></div>
+                            <div class="text-xs text-slate-500 mt-1">İcazələr: <span x-text="t.abilities.join(', ')"></span></div>
+                        </div>
+                        <button @click="revokeToken(t)" class="text-sm text-red-600 hover:text-red-700 font-medium">Ləğv et</button>
+                    </div>
+                </template>
+                <div x-show="tokens.length === 0" class="text-center py-8 text-slate-500 text-sm">Hələ token yaratmamısınız.</div>
+            </div>
+        </section>
+
+        {# Danger zone #}
+        <section class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900">
+            <h3 class="text-lg font-semibold mb-1 text-red-600 dark:text-red-400">Təhlükəli zona</h3>
+            <p class="text-sm text-slate-500 mb-5">Bu əməliyyatlar geri qaytarıla bilməz.</p>
+            <button class="px-5 py-2.5 rounded-xl border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 font-semibold hover:bg-red-50 dark:hover:bg-red-950/30">
+                Hesabı silmək
+            </button>
+        </section>
+    </div>
+
+    {# Token modal #}
+    <div x-show="showTokenModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>
+        <div @click="showTokenModal = false" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+                <h2 class="text-xl font-bold">Yeni API token</h2>
+            </div>
+            <form @submit.prevent="createToken" class="p-6 space-y-4">
+                <div x-show="!createdToken">
+                    <label class="block text-sm font-medium mb-2">Token adı</label>
+                    <input x-model="newToken.name" type="text" required placeholder="Məs: Production app" class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 mb-4">
+
+                    <label class="block text-sm font-medium mb-2">İcazələr</label>
+                    <div class="space-y-2">
+                        <template x-for="ab in ['read', 'write', 'delete']" :key="ab">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" :value="ab" x-model="newToken.abilities" class="rounded">
+                                <span x-text="ab"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                <div x-show="createdToken" x-cloak class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+                    <p class="text-sm text-amber-700 dark:text-amber-400 mb-2 font-semibold">⚠ Bu tokeni indi kopyalayın — yenidən göstərilməyəcək!</p>
+                    <div class="flex gap-2">
+                        <input :value="createdToken" readonly class="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900 font-mono text-xs">
+                        <button @click="navigator.clipboard.writeText(createdToken)" type="button" class="px-3 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium">Kopyala</button>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button @click="showTokenModal = false; createdToken = ''" type="button" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700">Bağla</button>
+                    <button x-show="!createdToken" type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold">Yarat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function settings() {
+    return {
+        profile: { name: '', email: '' },
+        pwd: { current: '', new: '' },
+        tokens: [],
+        savingProfile: false,
+        savingPwd: false,
+        showTokenModal: false,
+        newToken: { name: '', abilities: ['read'] },
+        createdToken: '',
+
+        async load() {
+            const me = await (await window.lfFetch('/api/v1/auth/me')).json();
+            if (me.success) this.profile = { name: me.data.name, email: me.data.email };
+
+            const t = await (await window.lfFetch('/api/v1/settings/tokens')).json();
+            if (t.success) this.tokens = t.data;
+        },
+
+        async saveProfile() {
+            this.savingProfile = true;
+            const res = await window.lfFetch('/api/v1/settings/profile', { method: 'PATCH', body: JSON.stringify(this.profile) });
+            this.savingProfile = false;
+            localStorage.setItem('lf_user_name', this.profile.name);
+        },
+
+        async changePassword() {
+            this.savingPwd = true;
+            const res = await window.lfFetch('/api/v1/settings/password', {
+                method: 'POST',
+                body: JSON.stringify({ current_password: this.pwd.current, new_password: this.pwd.new }),
+            });
+            const json = await res.json();
+            if (json.success) {
+                alert('Şifrə uğurla dəyişdirildi.');
+                this.pwd = { current: '', new: '' };
+            } else {
+                alert(json.error?.message ?? 'Xəta baş verdi.');
+            }
+            this.savingPwd = false;
+        },
+
+        async createToken() {
+            const res = await window.lfFetch('/api/v1/settings/tokens', { method: 'POST', body: JSON.stringify(this.newToken) });
+            const json = await res.json();
+            if (json.success) {
+                this.createdToken = json.data.token;
+                await this.load();
+            } else {
+                alert(json.error?.message ?? 'Token yaradılmadı.');
+            }
+        },
+
+        async revokeToken(t) {
+            if (!confirm('Bu tokeni ləğv etmək istədiyinizə əminsiniz?')) return;
+            await window.lfFetch('/api/v1/settings/tokens/' + t.id, { method: 'DELETE' });
+            this.tokens = this.tokens.filter(x => x.id !== t.id);
+        },
+    }
+}
+</script>
+{% endblock %}

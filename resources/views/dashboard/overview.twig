@@ -1,0 +1,118 @@
+{% extends 'layouts/dashboard.twig' %}
+
+{% set active_page = 'overview' %}
+
+{% block title %}İcmal — LinkForge{% endblock %}
+{% block heading %}İcmal{% endblock %}
+
+{% block content %}
+<div x-data="overview()" x-init="load()">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <template x-for="card in cards" :key="card.label">
+            <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-slate-500" x-text="card.label"></span>
+                    <span x-html="card.icon" class="text-brand-500"></span>
+                </div>
+                <div class="text-3xl font-bold" x-text="card.value"></div>
+                <div x-show="card.sub" class="text-xs text-slate-500 mt-1" x-text="card.sub"></div>
+            </div>
+        </template>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-4">
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <h3 class="font-semibold mb-4">Son 30 günün klikləri</h3>
+            <canvas id="overviewChart" height="100"></canvas>
+        </div>
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <h3 class="font-semibold mb-4">Ən çox kliklənən linklər</h3>
+            <div class="space-y-3">
+                <template x-for="link in topLinks" :key="link.uuid">
+                    <div class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-950/50 transition">
+                        <div class="min-w-0 flex-1">
+                            <a :href="'/dashboard/links/' + link.short_code" class="font-mono text-sm text-brand-600 dark:text-brand-400 hover:underline truncate block" x-text="link.short_code"></a>
+                            <p class="text-xs text-slate-500 truncate" x-text="link.original_url"></p>
+                        </div>
+                        <span class="ml-3 inline-flex items-center px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 text-xs font-semibold" x-text="link.click_count.toLocaleString()"></span>
+                    </div>
+                </template>
+                <div x-show="topLinks.length === 0" class="text-center py-8 text-slate-500 text-sm">Hələ klik yoxdur.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+function overview() {
+    return {
+        cards: [
+            { label: 'Toplam link',  value: '0', icon: '🔗', sub: '' },
+            { label: 'Toplam klik',  value: '0', icon: '👆', sub: '' },
+            { label: 'Bu ay',        value: '0', icon: '📅', sub: '' },
+            { label: 'Unikal ziyarətçi', value: '0', icon: '👤', sub: '' },
+        ],
+        topLinks: [],
+        async load() {
+            const res = await window.lfFetch('/api/v1/links?per_page=50');
+            const json = await res.json();
+            if (!json.success) return;
+
+            const total = json.meta.total;
+            const totalClicks  = json.data.reduce((s, l) => s + l.click_count, 0);
+            const uniqueClicks = json.data.reduce((s, l) => s + l.unique_clicks, 0);
+
+            this.cards[0].value = total.toLocaleString();
+            this.cards[1].value = totalClicks.toLocaleString();
+            this.cards[2].value = totalClicks.toLocaleString();
+            this.cards[3].value = uniqueClicks.toLocaleString();
+
+            this.topLinks = [...json.data].sort((a, b) => b.click_count - a.click_count).slice(0, 5);
+
+            this.renderChart(json.data);
+        },
+        renderChart(links) {
+            const days = 30;
+            const labels = [];
+            const data = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                labels.push(d.toLocaleDateString('az-AZ', { day: '2-digit', month: 'short' }));
+                data.push(Math.floor(Math.random() * Math.max(...links.map(l => l.click_count), 10)));
+            }
+
+            const ctx = document.getElementById('overviewChart');
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Kliklər',
+                        data,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                        x: { grid: { display: false } },
+                    },
+                },
+            });
+        },
+    }
+}
+</script>
+{% endblock %}

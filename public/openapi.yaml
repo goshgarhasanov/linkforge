@@ -1,0 +1,457 @@
+openapi: 3.1.0
+info:
+  title: LinkForge API
+  version: 1.0.0
+  description: |
+    LinkForge — peşəkar URL qısaltma və analitika platforması.
+
+    Bu API JWT (Bearer) autentifikasiyası istifadə edir. Bütün cavablar
+    `application/json` formatındadır və standartlaşdırılmış zərf strukturuna malikdir:
+
+    ```json
+    { "success": true, "data": {...}, "meta": {...} }
+    ```
+
+    Xətalar üçün:
+
+    ```json
+    { "success": false, "error": { "message": "...", "code": 422, "fields": {...} } }
+    ```
+  contact:
+    name: Qoshqar Hasanov
+    email: hasnaov@gmail.com
+    url: https://github.com/goshgarhasanov/linkforge
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Lokal inkişaf
+  - url: https://api.linkforge.io/v1
+    description: Production
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Health
+    description: Servis sağlamlıq yoxlamaları
+  - name: Auth
+    description: İstifadəçi qeydiyyatı və autentifikasiya
+  - name: Links
+    description: URL qısaltma və idarəetmə
+  - name: Analytics
+    description: Klik analitikası və hesabatlar
+  - name: QR
+    description: QR kod generasiyası
+  - name: Settings
+    description: Profil və API token idarəetməsi
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Servis sağlamlıq statusu
+      security: []
+      responses:
+        '200':
+          description: Servis işləyir
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Yeni istifadəçi qeydiyyatı
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Hesab uğurla yaradıldı
+        '409':
+          description: Bu e-poçt artıq mövcuddur
+        '422':
+          description: Validasiya xətası
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Giriş və JWT token əldə et
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Uğurlu giriş
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: E-poçt və ya şifrə yanlışdır
+        '429':
+          description: Çox sayda uğursuz cəhd (lockout)
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Cari istifadəçi profili
+      responses:
+        '200':
+          description: Profil məlumatları
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /links:
+    post:
+      tags: [Links]
+      summary: Yeni qısa link yarat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLinkRequest'
+      responses:
+        '201':
+          description: Link yaradıldı
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkResponse'
+
+    get:
+      tags: [Links]
+      summary: Linklərin siyahısı (paginated)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 5, maximum: 100, default: 20 }
+        - in: query
+          name: search
+          schema: { type: string }
+      responses:
+        '200':
+          description: Linklərin siyahısı
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Link' }
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  /links/{code}:
+    get:
+      tags: [Links]
+      summary: Link detalları
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Link tapıldı }
+        '404': { description: Tapılmadı }
+
+    delete:
+      tags: [Links]
+      summary: Link silmək (soft delete)
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Silindi }
+
+  /links/{code}/analytics:
+    get:
+      tags: [Analytics]
+      summary: Link üçün analitik məlumatlar
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+        - in: query
+          name: days
+          schema: { type: integer, minimum: 1, maximum: 365, default: 30 }
+      responses:
+        '200':
+          description: Analitika məlumatları
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResponse'
+
+  /links/{code}/qr.png:
+    get:
+      tags: [QR]
+      summary: PNG formatında QR kod
+      security: []
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: QR kod PNG faylı
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+
+  /links/{code}/qr.svg:
+    get:
+      tags: [QR]
+      summary: SVG formatında QR kod
+      security: []
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: QR kod SVG faylı
+          content:
+            image/svg+xml:
+              schema: { type: string }
+
+  /settings/profile:
+    patch:
+      tags: [Settings]
+      summary: Profil yenilə
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:   { type: string }
+                locale: { type: string }
+      responses:
+        '200': { description: Yeniləndi }
+
+  /settings/password:
+    post:
+      tags: [Settings]
+      summary: Şifrə dəyiş
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string }
+                new_password:     { type: string, minLength: 8 }
+      responses:
+        '200': { description: Dəyişdirildi }
+        '401': { description: Cari şifrə yanlışdır }
+
+  /settings/tokens:
+    get:
+      tags: [Settings]
+      summary: API tokenlərin siyahısı
+      responses:
+        '200': { description: Tokenlər }
+    post:
+      tags: [Settings]
+      summary: Yeni API token yarat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                abilities:
+                  type: array
+                  items: { type: string, enum: [read, write, delete, '*'] }
+                expires_at: { type: string, format: date-time }
+      responses:
+        '201':
+          description: Token yaradıldı (yalnız bir dəfə göstərilir)
+
+  /settings/tokens/{id}:
+    delete:
+      tags: [Settings]
+      summary: Tokeni ləğv et
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204': { description: Ləğv edildi }
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            status:    { type: string, example: ok }
+            service:   { type: string, example: linkforge }
+            version:   { type: string, example: 1.0.0 }
+            timestamp: { type: string, format: date-time }
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:     { type: string, minLength: 2, maxLength: 120, example: Qoshqar Hasanov }
+        email:    { type: string, format: email, example: qoshqar@example.com }
+        password: { type: string, minLength: 8, example: GucluSifre123 }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:    { type: string, format: email }
+        password: { type: string }
+
+    TokenResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            token:      { type: string, description: "JWT token (HS256)" }
+            token_type: { type: string, example: Bearer }
+            expires_in: { type: integer, example: 3600 }
+
+    UserProfile:
+      type: object
+      properties:
+        uuid:       { type: string, format: uuid }
+        name:       { type: string }
+        email:      { type: string, format: email }
+        role:       { type: string, enum: [super_admin, admin, pro_user, free_user] }
+        verified:   { type: boolean }
+        two_factor: { type: boolean }
+
+    CreateLinkRequest:
+      type: object
+      required: [url]
+      properties:
+        url:               { type: string, format: uri, example: "https://example.com/cox-uzun-link" }
+        alias:             { type: string, pattern: "^[a-zA-Z0-9_-]{3,32}$", example: menim-linkim }
+        title:             { type: string, maxLength: 255 }
+        password:          { type: string, minLength: 4 }
+        expires_at:        { type: string, format: date-time }
+        max_clicks:        { type: integer, minimum: 1 }
+        utm:
+          type: object
+          properties:
+            source:   { type: string }
+            medium:   { type: string }
+            campaign: { type: string }
+        ios_deep_link:     { type: string }
+        android_deep_link: { type: string }
+
+    Link:
+      type: object
+      properties:
+        uuid:          { type: string, format: uuid }
+        short_code:    { type: string }
+        short_url:     { type: string, format: uri }
+        original_url:  { type: string, format: uri }
+        title:         { type: string, nullable: true }
+        click_count:   { type: integer }
+        unique_clicks: { type: integer }
+        has_password:  { type: boolean }
+        expires_at:    { type: string, format: date-time, nullable: true }
+        max_clicks:    { type: integer, nullable: true }
+        is_active:     { type: boolean }
+        is_flagged:    { type: boolean }
+        created_at:    { type: string, format: date-time }
+
+    LinkResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/Link' }
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:        { type: integer }
+        per_page:    { type: integer }
+        total:       { type: integer }
+        total_pages: { type: integer }
+
+    AnalyticsResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            summary:
+              type: object
+              properties:
+                total_clicks:    { type: integer }
+                unique_clicks:   { type: integer }
+                clicks_last_24h: { type: integer }
+                clicks_last_7d:  { type: integer }
+                clicks_last_30d: { type: integer }
+                avg_per_day_30d: { type: number }
+                top_country:     { type: string, nullable: true }
+                top_referrer:    { type: string, nullable: true }
+            timeseries:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:    { type: string, format: date }
+                  clicks:  { type: integer }
+                  uniques: { type: integer }
+            devices:   { type: array, items: { $ref: '#/components/schemas/BreakdownRow' } }
+            browsers:  { type: array, items: { $ref: '#/components/schemas/BreakdownRow' } }
+            os:        { type: array, items: { $ref: '#/components/schemas/BreakdownRow' } }
+            countries: { type: array, items: { $ref: '#/components/schemas/BreakdownRow' } }
+            referrers: { type: array, items: { $ref: '#/components/schemas/BreakdownRow' } }
+
+    BreakdownRow:
+      type: object
+      properties:
+        label:   { type: string }
+        clicks:  { type: integer }
+        uniques: { type: integer }

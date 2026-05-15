@@ -1,0 +1,110 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}Giriş — LinkForge{% endblock %}
+
+{% block body %}
+<div class="min-h-screen flex">
+    {# Left: form #}
+    <div class="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8" x-data="loginForm()">
+        <div class="mx-auto w-full max-w-md">
+            <a href="/" class="flex items-center gap-2 mb-10">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <span class="text-xl font-bold gradient-text">LinkForge</span>
+            </a>
+
+            <h1 class="text-3xl font-bold mb-2">Yenidən salam 👋</h1>
+            <p class="text-slate-600 dark:text-slate-400 mb-8">Hesabınıza daxil olun.</p>
+
+            <form @submit.prevent="submit" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium mb-2">E-poçt</label>
+                    <input
+                        x-model="email"
+                        type="email"
+                        required
+                        autofocus
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+                        placeholder="siz@example.com">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="block text-sm font-medium">Şifrə</label>
+                        <a href="/forgot-password" class="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400">Unutmusunuz?</a>
+                    </div>
+                    <input
+                        x-model="password"
+                        type="password"
+                        required
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+                        placeholder="••••••••">
+                </div>
+
+                <div x-show="error" x-cloak class="px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 text-sm" x-text="error"></div>
+
+                <button
+                    type="submit"
+                    :disabled="loading"
+                    class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold shadow-lg shadow-brand-500/30 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <span x-show="!loading">Daxil ol</span>
+                    <span x-show="loading">Yoxlanılır...</span>
+                </button>
+            </form>
+
+            <p class="text-center text-sm text-slate-600 dark:text-slate-400 mt-8">
+                Hesabınız yoxdur?
+                <a href="/register" class="text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium">Pulsuz qeydiyyatdan keçin</a>
+            </p>
+        </div>
+    </div>
+
+    {# Right: branding #}
+    <div class="hidden lg:flex flex-1 bg-gradient-to-br from-brand-600 via-purple-600 to-pink-600 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.15),transparent_50%)]"></div>
+        <div class="relative flex flex-col justify-center items-center text-white p-12">
+            <div class="max-w-md text-center">
+                <div class="text-6xl mb-6">🔗</div>
+                <h2 class="text-4xl font-bold mb-4">Linklərinizi gücləndirin</h2>
+                <p class="text-lg text-white/80">Hər kliki izləyin, auditoriyanızı tanıyın və daha ağıllı qərarlar verin.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loginForm() {
+    return {
+        email: '',
+        password: '',
+        loading: false,
+        error: '',
+        async submit() {
+            this.loading = true;
+            this.error = '';
+            try {
+                const res = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: this.email, password: this.password }),
+                });
+                const json = await res.json();
+                if (json.success) {
+                    localStorage.setItem('lf_token', json.data.token);
+                    window.location.href = '/dashboard';
+                } else {
+                    this.error = json.error?.message ?? 'Giriş alınmadı.';
+                }
+            } catch (e) {
+                this.error = 'Bağlantı xətası. Zəhmət olmasa, yenidən cəhd edin.';
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

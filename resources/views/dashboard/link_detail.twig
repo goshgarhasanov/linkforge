@@ -1,0 +1,202 @@
+{% extends 'layouts/dashboard.twig' %}
+
+{% set active_page = 'links' %}
+
+{% block title %}{{ short_code }} — Analitika{% endblock %}
+{% block heading %}Link analitikası{% endblock %}
+
+{% block content %}
+<div x-data="linkDetail('{{ short_code }}')" x-init="load()">
+    <a href="/dashboard/links" class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-brand-600 mb-4">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Linklərə qayıt
+    </a>
+
+    <div x-show="loading" class="text-center py-20">
+        <div class="inline-block w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <div x-show="!loading && link" x-cloak>
+        {# Header card #}
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                    <h2 class="text-xl font-bold mb-1" x-text="link?.title || link?.short_code"></h2>
+                    <div class="flex items-center gap-2 mb-2">
+                        <a :href="link?.short_url" target="_blank" class="font-mono text-brand-600 dark:text-brand-400 hover:underline truncate" x-text="link?.short_url"></a>
+                        <button @click="copy" class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                        </button>
+                    </div>
+                    <p class="text-sm text-slate-500 truncate" x-text="'→ ' + (link?.original_url || '')"></p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <a :href="'/api/v1/links/' + shortCode + '/qr.png'" download class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-sm font-medium">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        QR yüklə
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {# KPI cards #}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <template x-for="kpi in kpis" :key="kpi.label">
+                <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <div class="text-xs text-slate-500 uppercase tracking-wider mb-2" x-text="kpi.label"></div>
+                    <div class="text-3xl font-bold" x-text="kpi.value"></div>
+                </div>
+            </template>
+        </div>
+
+        {# Timeseries chart #}
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold">Klik trendi</h3>
+                <select x-model="days" @change="load()" class="text-sm px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950">
+                    <option value="7">Son 7 gün</option>
+                    <option value="30">Son 30 gün</option>
+                    <option value="90">Son 90 gün</option>
+                </select>
+            </div>
+            <canvas id="timeChart" height="80"></canvas>
+        </div>
+
+        {# Breakdown grid #}
+        <div class="grid lg:grid-cols-2 gap-6 mb-6">
+            <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <h3 class="font-semibold mb-4">Cihaz növü</h3>
+                <canvas id="deviceChart" height="180"></canvas>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <h3 class="font-semibold mb-4">Brauzer</h3>
+                <canvas id="browserChart" height="180"></canvas>
+            </div>
+        </div>
+
+        {# Tables #}
+        <div class="grid lg:grid-cols-2 gap-6">
+            <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <h3 class="font-semibold mb-4">Ölkələr</h3>
+                <table class="w-full text-sm">
+                    <thead class="text-xs uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                        <tr><th class="text-left py-2">Ölkə</th><th class="text-right py-2">Kliklər</th></tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="row in (data?.countries || [])" :key="row.label">
+                            <tr class="border-b border-slate-100 dark:border-slate-800/50">
+                                <td class="py-2" x-text="row.label || 'Naməlum'"></td>
+                                <td class="py-2 text-right font-semibold" x-text="row.clicks.toLocaleString()"></td>
+                            </tr>
+                        </template>
+                        <tr x-show="(data?.countries || []).length === 0"><td colspan="2" class="py-6 text-center text-slate-500">Məlumat yoxdur</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <h3 class="font-semibold mb-4">Referrer mənbələri</h3>
+                <table class="w-full text-sm">
+                    <thead class="text-xs uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                        <tr><th class="text-left py-2">Mənbə</th><th class="text-right py-2">Kliklər</th></tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="row in (data?.referrers || [])" :key="row.label">
+                            <tr class="border-b border-slate-100 dark:border-slate-800/50">
+                                <td class="py-2 truncate max-w-xs" x-text="row.label || 'Birbaşa'"></td>
+                                <td class="py-2 text-right font-semibold" x-text="row.clicks.toLocaleString()"></td>
+                            </tr>
+                        </template>
+                        <tr x-show="(data?.referrers || []).length === 0"><td colspan="2" class="py-6 text-center text-slate-500">Məlumat yoxdur</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+function linkDetail(code) {
+    return {
+        shortCode: code,
+        link: null,
+        data: null,
+        loading: true,
+        days: '30',
+        kpis: [],
+        charts: {},
+
+        async load() {
+            this.loading = true;
+
+            const [linkRes, anRes] = await Promise.all([
+                window.lfFetch('/api/v1/links/' + this.shortCode),
+                window.lfFetch('/api/v1/links/' + this.shortCode + '/analytics?days=' + this.days),
+            ]);
+
+            const linkJson = await linkRes.json();
+            const anJson = await anRes.json();
+
+            if (linkJson.success) this.link = linkJson.data;
+            if (anJson.success) {
+                this.data = anJson.data;
+                this.kpis = [
+                    { label: 'Toplam',         value: anJson.data.summary.total_clicks.toLocaleString() },
+                    { label: 'Unikal',         value: anJson.data.summary.unique_clicks.toLocaleString() },
+                    { label: 'Son 24 saat',    value: anJson.data.summary.clicks_last_24h.toLocaleString() },
+                    { label: 'Günlük orta',    value: anJson.data.summary.avg_per_day_30d.toString() },
+                ];
+                this.$nextTick(() => this.renderCharts());
+            }
+
+            this.loading = false;
+        },
+
+        renderCharts() {
+            Object.values(this.charts).forEach(c => c?.destroy());
+            this.charts = {};
+
+            const ts = this.data.timeseries;
+            const timeCtx = document.getElementById('timeChart');
+            if (timeCtx) {
+                this.charts.time = new Chart(timeCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ts.map(p => new Date(p.date).toLocaleDateString('az-AZ', { day: '2-digit', month: 'short' })),
+                        datasets: [
+                            { label: 'Toplam kliklər', data: ts.map(p => p.clicks),  borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4, pointRadius: 0 },
+                            { label: 'Unikal',         data: ts.map(p => p.uniques), borderColor: '#ec4899', backgroundColor: 'rgba(236,72,153,0.1)', fill: false, tension: 0.4, pointRadius: 0 },
+                        ],
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' } }, x: { grid: { display: false } } } },
+                });
+            }
+
+            this.renderDoughnut('deviceChart', this.data.devices, ['#6366f1', '#a855f7', '#ec4899', '#f59e0b', '#10b981']);
+            this.renderDoughnut('browserChart', this.data.browsers, ['#6366f1', '#a855f7', '#ec4899', '#f59e0b', '#10b981', '#3b82f6']);
+        },
+
+        renderDoughnut(id, rows, colors) {
+            const ctx = document.getElementById(id);
+            if (!ctx || rows.length === 0) return;
+            this.charts[id] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: rows.map(r => r.label),
+                    datasets: [{ data: rows.map(r => r.clicks), backgroundColor: colors, borderWidth: 0 }],
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, cutout: '65%' },
+            });
+        },
+
+        async copy() {
+            if (!this.link) return;
+            await navigator.clipboard.writeText(this.link.short_url);
+        },
+    }
+}
+</script>
+{% endblock %}

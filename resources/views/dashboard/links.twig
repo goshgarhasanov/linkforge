@@ -1,0 +1,175 @@
+{% extends 'layouts/dashboard.twig' %}
+
+{% set active_page = 'links' %}
+
+{% block title %}Linklər — LinkForge{% endblock %}
+{% block heading %}Linklərim{% endblock %}
+
+{% block content %}
+<div x-data="linkList()" x-init="load()">
+    {# Toolbar #}
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+        <div class="flex-1 relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input
+                x-model="search"
+                @input.debounce.300ms="load()"
+                type="text"
+                placeholder="URL, başlıq və ya kod ilə axtar..."
+                class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+        </div>
+        <button
+            @click="$dispatch('open-create-modal')"
+            class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold shadow-lg shadow-brand-500/30 hover:shadow-xl transition whitespace-nowrap">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            Yeni link
+        </button>
+    </div>
+
+    {# Empty / Loading #}
+    <div x-show="loading" class="text-center py-20">
+        <div class="inline-block w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <div x-show="!loading && links.length === 0" x-cloak class="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <div class="text-6xl mb-4">🔗</div>
+        <h3 class="text-xl font-semibold mb-2">Hələ link yaratmamısınız</h3>
+        <p class="text-slate-600 dark:text-slate-400 mb-6">İlk linkinizi yaratmaq üçün aşağıdakı düyməyə basın.</p>
+        <button @click="$dispatch('open-create-modal')" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold">
+            İlk linkimi yarat
+        </button>
+    </div>
+
+    {# Table #}
+    <div x-show="!loading && links.length > 0" x-cloak class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-950/50 text-left text-xs uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="px-6 py-3 font-semibold">Qısa link</th>
+                        <th class="px-6 py-3 font-semibold">Hədəf</th>
+                        <th class="px-6 py-3 font-semibold text-right">Kliklər</th>
+                        <th class="px-6 py-3 font-semibold">Yaradılma</th>
+                        <th class="px-6 py-3 font-semibold text-right">Əməliyyatlar</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                    <template x-for="link in links" :key="link.uuid">
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-950/50 transition">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-2">
+                                    <a :href="link.short_url" target="_blank" class="font-mono text-brand-600 dark:text-brand-400 hover:underline" x-text="link.short_url.replace(/^https?:\/\//, '')"></a>
+                                    <button @click="copy(link.short_url)" class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Kopyala">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                    </button>
+                                </div>
+                                <div x-show="link.title" class="text-xs text-slate-500 mt-1" x-text="link.title"></div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="max-w-xs truncate text-slate-600 dark:text-slate-400" :title="link.original_url" x-text="link.original_url"></div>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 text-xs font-semibold">
+                                    <span x-text="link.click_count.toLocaleString()"></span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-500" x-text="formatDate(link.created_at)"></td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex justify-end items-center gap-1">
+                                    <a :href="'/dashboard/links/' + link.short_code" class="p-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Analitika">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </a>
+                                    <a :href="'/api/v1/links/' + link.short_code + '/qr.png'" download class="p-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="QR kod yüklə">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                                    </a>
+                                    <button @click="remove(link)" class="p-2 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-500 hover:text-red-600 transition" title="Sil">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <div x-show="meta.total_pages > 1" class="flex items-center justify-between px-6 py-3 border-t border-slate-200 dark:border-slate-800">
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+                Səhifə <span x-text="meta.page"></span> / <span x-text="meta.total_pages"></span>
+                <span class="text-slate-400">(cəmi <span x-text="meta.total"></span>)</span>
+            </p>
+            <div class="flex gap-2">
+                <button @click="changePage(meta.page - 1)" :disabled="meta.page <= 1" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Əvvəlki</button>
+                <button @click="changePage(meta.page + 1)" :disabled="meta.page >= meta.total_pages" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Növbəti</button>
+            </div>
+        </div>
+    </div>
+
+    {# Toast #}
+    <div x-show="toast" x-cloak x-transition class="fixed bottom-6 right-6 px-5 py-3 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl font-medium" x-text="toast"></div>
+</div>
+
+{% include 'dashboard/_create_modal.twig' %}
+
+<script>
+function linkList() {
+    return {
+        links: [],
+        loading: true,
+        search: '',
+        meta: { page: 1, per_page: 20, total: 0, total_pages: 1 },
+        toast: '',
+        async load(page = 1) {
+            this.loading = true;
+            const url = new URL('/api/v1/links', window.location.origin);
+            url.searchParams.set('page', page);
+            url.searchParams.set('per_page', 20);
+            if (this.search) url.searchParams.set('search', this.search);
+
+            const res = await window.lfFetch(url.toString());
+            const json = await res.json();
+            if (json.success) {
+                this.links = json.data;
+                this.meta = json.meta;
+            }
+            this.loading = false;
+        },
+        changePage(p) {
+            if (p < 1 || p > this.meta.total_pages) return;
+            this.load(p);
+        },
+        async copy(url) {
+            try {
+                await navigator.clipboard.writeText(url);
+                this.showToast('Link kopyalandı ✓');
+            } catch (e) {
+                this.showToast('Kopyalanmadı');
+            }
+        },
+        async remove(link) {
+            if (!confirm('Bu linki silmək istədiyinizə əminsiniz? Bu əməliyyat geri qaytarıla bilməz.')) return;
+            const res = await window.lfFetch('/api/v1/links/' + link.short_code, { method: 'DELETE' });
+            if (res.status === 204) {
+                this.links = this.links.filter(l => l.uuid !== link.uuid);
+                this.showToast('Link silindi');
+            } else {
+                this.showToast('Silinmədi');
+            }
+        },
+        showToast(msg) {
+            this.toast = msg;
+            setTimeout(() => this.toast = '', 2500);
+        },
+        formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return d.toLocaleDateString('az-AZ', { day: '2-digit', month: 'short', year: 'numeric' });
+        },
+    }
+}
+
+document.addEventListener('link-created', () => {
+    Alpine.evaluate(document.querySelector('[x-data="linkList()"]'), 'load()');
+});
+</script>
+{% endblock %}

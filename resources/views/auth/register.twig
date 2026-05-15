@@ -1,0 +1,142 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}Qeydiyyat — LinkForge{% endblock %}
+
+{% block body %}
+<div class="min-h-screen flex">
+    <div class="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8" x-data="registerForm()">
+        <div class="mx-auto w-full max-w-md">
+            <a href="/" class="flex items-center gap-2 mb-10">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                </div>
+                <span class="text-xl font-bold gradient-text">LinkForge</span>
+            </a>
+
+            <h1 class="text-3xl font-bold mb-2">Hesabınızı yaradın</h1>
+            <p class="text-slate-600 dark:text-slate-400 mb-8">60 saniyəyə pulsuz qeydiyyatdan keçin.</p>
+
+            <form @submit.prevent="submit" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Ad və soyad</label>
+                    <input
+                        x-model="name"
+                        type="text"
+                        required
+                        autofocus
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+                        placeholder="Qoshqar Hasanov">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">E-poçt</label>
+                    <input
+                        x-model="email"
+                        type="email"
+                        required
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+                        placeholder="siz@example.com">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Şifrə</label>
+                    <input
+                        x-model="password"
+                        type="password"
+                        required
+                        minlength="8"
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+                        placeholder="Ən azı 8 simvol">
+                    <p class="text-xs text-slate-500 mt-2">Böyük hərf, kiçik hərf və rəqəm ehtiva etməlidir.</p>
+                </div>
+
+                <div x-show="error" x-cloak class="px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 text-sm" x-text="error"></div>
+
+                <button
+                    type="submit"
+                    :disabled="loading"
+                    class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 text-white font-semibold shadow-lg shadow-brand-500/30 hover:shadow-xl disabled:opacity-50 transition">
+                    <span x-show="!loading">Hesab yarat</span>
+                    <span x-show="loading">Yaradılır...</span>
+                </button>
+
+                <p class="text-xs text-slate-500 text-center leading-relaxed">
+                    Qeydiyyatdan keçməklə <a href="/terms" class="text-brand-600 hover:underline">İstifadə şərtləri</a> və
+                    <a href="/privacy" class="text-brand-600 hover:underline">Məxfilik siyasəti</a> ilə razılaşırsınız.
+                </p>
+            </form>
+
+            <p class="text-center text-sm text-slate-600 dark:text-slate-400 mt-8">
+                Artıq hesabınız var?
+                <a href="/login" class="text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium">Daxil olun</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="hidden lg:flex flex-1 bg-gradient-to-br from-brand-600 via-purple-600 to-pink-600 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(255,255,255,0.15),transparent_50%)]"></div>
+        <div class="relative flex flex-col justify-center items-center text-white p-12">
+            <div class="max-w-md text-center">
+                <div class="text-6xl mb-6">🚀</div>
+                <h2 class="text-4xl font-bold mb-4">Bu gün başlayın</h2>
+                <p class="text-lg text-white/80 mb-8">Pulsuz plan: 50 link/ay, əsas analitika, QR kod generasiyası.</p>
+                <ul class="space-y-3 text-left text-white/90">
+                    <li class="flex items-center gap-3"><span class="text-green-300">✓</span> Kredit kartı tələb olunmur</li>
+                    <li class="flex items-center gap-3"><span class="text-green-300">✓</span> 60 saniyəyə hazır</li>
+                    <li class="flex items-center gap-3"><span class="text-green-300">✓</span> İstənilən vaxt ləğv edə bilərsiniz</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function registerForm() {
+    return {
+        name: '',
+        email: '',
+        password: '',
+        loading: false,
+        error: '',
+        async submit() {
+            this.loading = true;
+            this.error = '';
+            try {
+                const res = await fetch('/api/v1/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: this.name, email: this.email, password: this.password }),
+                });
+                const json = await res.json();
+                if (json.success) {
+                    const loginRes = await fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: this.email, password: this.password }),
+                    });
+                    const loginJson = await loginRes.json();
+                    if (loginJson.success) {
+                        localStorage.setItem('lf_token', loginJson.data.token);
+                        window.location.href = '/dashboard';
+                    } else {
+                        window.location.href = '/login';
+                    }
+                } else {
+                    if (json.error?.fields) {
+                        this.error = Object.values(json.error.fields).flat().join(' ');
+                    } else {
+                        this.error = json.error?.message ?? 'Qeydiyyat alınmadı.';
+                    }
+                }
+            } catch (e) {
+                this.error = 'Bağlantı xətası. Zəhmət olmasa, yenidən cəhd edin.';
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

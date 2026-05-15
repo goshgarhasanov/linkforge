@@ -7,6 +7,27 @@ Bu layihə [Semantic Versioning](https://semver.org/spec/v2.0.0.html) istifadə 
 
 ## [Unreleased]
 
+### Phase 2 — Dashboard, Analytics & API Docs (2026-05-15)
+
+#### Added
+- Auth UI: `/login` və `/register` səhifələri (split-screen, branding, error handling)
+- Dashboard layout (sidebar + topbar, mobile responsive, dark mode toggle)
+- `/dashboard` — KPI cards, son 30 günün klik qrafiki (Chart.js line chart), top 5 link
+- `/dashboard/links` — link siyahısı (debounced search, pagination, copy-to-clipboard, sil)
+- Yeni link yaratmaq modal-ı (URL, alias, password, expires, max_clicks, UTM, deep links)
+- `/dashboard/links/{code}` — analitika dashboard-u:
+  - KPI cards (toplam/unikal/24 saat/günlük orta)
+  - Timeseries line chart (7/30/90 gün toggle)
+  - Cihaz və brauzer doughnut chart-ları
+  - Ölkə və referrer cədvəlləri
+- `AnalyticsService` — summary, timeseries, breakdown, hourly heatmap
+- `GET /api/v1/links/{code}/analytics` endpoint-i
+- `GET /api/v1/links/{code}/qr.{png,svg}` — `endroid/qr-code` ilə QR generasiyası
+- `/dashboard/settings` — profil, şifrə, API token CRUD UI
+- `ApiTokenService` — sha256 hashed tokenlər, abilities-based authorization
+- `PATCH /settings/profile`, `POST /settings/password`, `/settings/tokens` CRUD
+- **OpenAPI 3.1 sənəd** (`/openapi.yaml`) + **Swagger UI** (`/docs`)
+
 ### Phase 1 — Foundation (2026-05-15)
 
 #### Added

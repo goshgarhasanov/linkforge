@@ -131,6 +131,16 @@ curl -X POST http://localhost:8080/api/v1/links \
 | `GET`    | `/api/v1/links`          | Linklərin siyahısı (pagination) | ✅ |
 | `GET`    | `/api/v1/links/{code}`   | Link detalları | ✅ |
 | `DELETE` | `/api/v1/links/{code}`   | Link sil | ✅ |
+| `GET`    | `/api/v1/links/{code}/analytics` | Analitika məlumatları | ✅ |
+| `GET`    | `/api/v1/links/{code}/qr.png`    | PNG formatında QR kod | ❌ |
+| `GET`    | `/api/v1/links/{code}/qr.svg`    | SVG formatında QR kod | ❌ |
+| `PATCH`  | `/api/v1/settings/profile`       | Profil yenilə | ✅ |
+| `POST`   | `/api/v1/settings/password`      | Şifrə dəyiş | ✅ |
+| `GET`    | `/api/v1/settings/tokens`        | API tokenlərin siyahısı | ✅ |
+| `POST`   | `/api/v1/settings/tokens`        | Yeni API token | ✅ |
+| `DELETE` | `/api/v1/settings/tokens/{id}`   | Tokeni ləğv et | ✅ |
+
+📖 **Tam interaktiv sənədləşmə:** [`http://localhost:8080/docs`](http://localhost:8080/docs) (Swagger UI)
 
 ## 🏛️ Arxitektura
 
@@ -214,7 +224,7 @@ docker compose exec php composer format
 ## 📋 Roadmap
 
 - [x] **Phase 1** — Foundation, auth, link CRUD, redirect, analytics tracking
-- [ ] **Phase 2** — Dashboard UI, charts, link management interface
+- [x] **Phase 2** — Dashboard UI, charts, link management, QR codes, OpenAPI/Swagger
 - [ ] **Phase 3** — Admin paneli, user management, moderation
 - [ ] **Phase 4** — Toplu idxal, QR kod, deep linking
 - [ ] **Phase 5** — OAuth2 (Google, GitHub), 2FA

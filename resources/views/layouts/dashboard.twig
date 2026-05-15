@@ -1,0 +1,117 @@
+{% extends 'layouts/base.twig' %}
+
+{% block body %}
+<div x-data="{ sidebarOpen: false }" class="min-h-screen bg-slate-100 dark:bg-slate-950">
+    {# Sidebar #}
+    <aside
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+        class="fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-200 ease-in-out">
+        <div class="flex items-center gap-2 h-16 px-6 border-b border-slate-200 dark:border-slate-800">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+            </div>
+            <span class="text-xl font-bold gradient-text">LinkForge</span>
+        </div>
+
+        <nav class="p-4 space-y-1">
+            {% set active = active_page ?? 'links' %}
+            {% set items = [
+                { key: 'overview',  href: '/dashboard',          label: 'İcmal',     icon: 'home' },
+                { key: 'links',     href: '/dashboard/links',    label: 'Linklər',   icon: 'link' },
+                { key: 'analytics', href: '/dashboard/analytics',label: 'Analitika', icon: 'chart' },
+                { key: 'qr',        href: '/dashboard/qr',       label: 'QR kodlar', icon: 'qr' },
+                { key: 'settings',  href: '/dashboard/settings', label: 'Tənzimləmələr', icon: 'cog' },
+            ] %}
+            {% for item in items %}
+            <a href="{{ item.href }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium {{ active == item.key ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' }} transition">
+                {% if item.icon == 'home' %}
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                {% elseif item.icon == 'link' %}
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                {% elseif item.icon == 'chart' %}
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                {% elseif item.icon == 'qr' %}
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                {% elseif item.icon == 'cog' %}
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                {% endif %}
+                {{ item.label }}
+            </a>
+            {% endfor %}
+        </nav>
+
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200 dark:border-slate-800">
+            <a href="/dashboard/settings" class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold" x-data x-init="$el.textContent = (localStorage.getItem('lf_user_name') ?? 'U').slice(0,1).toUpperCase()"></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate" x-data x-init="$el.textContent = localStorage.getItem('lf_user_name') ?? 'İstifadəçi'"></p>
+                    <p class="text-xs text-slate-500 truncate" x-data x-init="$el.textContent = localStorage.getItem('lf_user_email') ?? ''"></p>
+                </div>
+            </a>
+        </div>
+    </aside>
+
+    {# Backdrop (mobile) #}
+    <div x-show="sidebarOpen" @click="sidebarOpen = false" x-cloak class="fixed inset-0 bg-black/50 z-20 lg:hidden"></div>
+
+    {# Main #}
+    <div class="lg:pl-64">
+        <header class="sticky top-0 z-10 h-16 glass border-b border-slate-200/50 dark:border-slate-800/50 flex items-center px-4 sm:px-6 lg:px-8">
+            <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <h1 class="text-lg font-semibold ml-3 lg:ml-0">{% block heading %}{% endblock %}</h1>
+
+            <div class="ml-auto flex items-center gap-3">
+                <button
+                    @click="document.documentElement.classList.toggle('dark'); localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'"
+                    class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    aria-label="Tema dəyişdir">
+                    <svg class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+                    <svg class="w-5 h-5 dark:hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+                </button>
+                <button
+                    onclick="localStorage.removeItem('lf_token'); window.location.href='/'"
+                    class="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-red-600">
+                    Çıxış
+                </button>
+            </div>
+        </header>
+
+        <main class="p-4 sm:p-6 lg:p-8">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<script>
+(function bootstrapAuth() {
+    const token = localStorage.getItem('lf_token');
+    if (!token) { window.location.href = '/login'; return; }
+
+    window.lfFetch = async function(url, options = {}) {
+        const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers ?? {});
+        headers['Authorization'] = 'Bearer ' + token;
+        const res = await fetch(url, { ...options, headers });
+        if (res.status === 401) {
+            localStorage.removeItem('lf_token');
+            window.location.href = '/login';
+            return null;
+        }
+        return res;
+    };
+
+    fetch('/api/v1/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.json())
+        .then(j => {
+            if (j.success) {
+                localStorage.setItem('lf_user_name', j.data.name);
+                localStorage.setItem('lf_user_email', j.data.email);
+            }
+        });
+})();
+</script>
+{% endblock %}
