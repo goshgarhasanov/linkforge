@@ -478,3 +478,11 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 **Crafted with ❤️ in Baku, Azerbaijan**
 
 </div>
+
+---
+
+## ☕ Support
+
+If this project is useful to you, you can support me with a coffee — thank you!
+
+**[☕ kofe.al/goshgarhasanov](https://kofe.al/goshgarhasanov)**
